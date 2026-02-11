@@ -7,6 +7,7 @@ namespace Interlife.Player
     [CreateAssetMenu(fileName = "InputReader", menuName = "Interlife/Input Reader")]
     public class InputReader : ScriptableObject, InputSystem_Actions.IPlayerActions
     {
+        // Eventos para que otros componentes se suscriban
         public event Action<Vector2> MoveEvent;
         public event Action JumpEvent;
         public event Action JumpCancelledEvent;
@@ -31,6 +32,7 @@ namespace Interlife.Player
             inputActions.Player.Disable();
         }
 
+        // Métodos de la interfaz IPlayerActions generada por Unity
         public void OnMove(InputAction.CallbackContext context)
         {
             MoveEvent?.Invoke(context.ReadValue<Vector2>());
@@ -62,7 +64,7 @@ namespace Interlife.Player
                 InteractionEvent?.Invoke();
         }
 
-        // Acciones no utilizadas en el Core loop de Void según GDD
+        // Acciones secundarias o no usadas en el Core loop inicial
         public void OnLook(InputAction.CallbackContext context) { }
         public void OnAttack(InputAction.CallbackContext context) { }
         public void OnSprint(InputAction.CallbackContext context) { }

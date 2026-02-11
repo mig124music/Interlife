@@ -1,4 +1,7 @@
 ﻿<Solution>
   <Project Path="Assembly-CSharp-Editor.csproj" />
   <Project Path="Assembly-CSharp.csproj" />
+  <Project Path="Interlife.Player.csproj" />
+  <Project Path="Interlife.Core.csproj" />
+  <Project Path="Interlife.Editor.csproj" />
 </Solution>

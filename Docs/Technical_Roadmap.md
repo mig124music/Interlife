@@ -20,21 +20,22 @@ Este documento detalla el proceso de desarrollo integral de **Void**, un platafo
 *Objetivo: Configurar el entorno de desarrollo y la base técnica.*
 
 - [x] **Estructura de Carpetas:** Implementar convención `_Interlife/` (Assets, Scripts, Prefabs, Art, Audio, Shaders).
-- [ ] **Control de Versiones:** Git configurado con `.gitignore` para Unity y LFS para assets pesados.
+- [x] **Control de Versiones:** Git configurado con `.gitignore` para Unity y LFS para assets pesados.
 - [x] **Input System:** Configuración de `InputSystem_Actions` para soporte híbrido (Teclado/Mando y Touch).
 - [x] **Arquitectura de Código:** Definir `Manager` central (GameManager, LevelManager) usando el patrón Singleton o ScriptableObjects para persistencia.
+- [x] **Herramientas de Editor:** Creado "Robot" de creación automática de Player (`PlayerCreator`).
 
 ---
 
 ## 🏃 Fase 2: Prototipo Dorado (Core Mechanics)
 *Objetivo: Lograr el "Game Feel" de Void (Ligereza controlada).*
 
-- [x] **Player Controller (2D):** 
-    - [x] Movimiento horizontal constante (6 m/s) sin aceleración brusca.
-    - [x] Salto Variable con Gravedad Asimétrica (subida suave, caída pesada).
+- [/] **Player Controller (2D):** 
+    - [/] Movimiento horizontal constante (6 m/s) sin aceleración brusca.
+    - [/] Salto Variable con Gravedad Asimétrica (subida suave, caída pesada).
     - [ ] Coyote Time y Jump Buffering para precisión máxima.
-- [x] **Movimientos Especiales:**
-    - [x] Dash Sombrío (Recorrido de 4 unidades en 0.2s).
+- [/] **Movimientos Especiales:**
+    - [/] Dash Sombrío (Recorrido de 4 unidades en 0.2s).
     - [ ] Wall Jump (Rebote diagonal).
     - [ ] Ledge Grab (Detección de esquinas y animación de izado).
 - [ ] **Cámara (Cinemachine):**
@@ -46,12 +47,12 @@ Este documento detalla el proceso de desarrollo integral de **Void**, un platafo
 ## ✨ Fase 3: Sistemas de Juego y Progresión
 *Objetivo: Implementar el bucle principal (Core Loop).*
 
-- [x] **Sistema de Vida y Muerte:**
-    - [x] Detección de colisiones letales (Triggers vs Collisioners).
-    - [x] Sistema de Checkpoints (Guardado de posición en memoria).
-    - [x] Respawn instantáneo con efecto visual de disolución.
-- [x] **Coleccionables (Fragmentos):**
-    - [x] Logica de 3 fragmentos por nivel usando ScriptableObjects para trackeo.
+- [ ] **Sistema de Vida y Muerte:**
+    - [ ] Detección de colisiones letales (Triggers vs Collisioners).
+    - [ ] Sistema de Checkpoints (Guardado de posición en memoria).
+    - [ ] Respawn instantáneo con efecto visual de disolución.
+- [ ] **Coleccionables (Fragmentos):**
+    - [ ] Logica de 3 fragmentos por nivel usando ScriptableObjects para trackeo.
 - [ ] **IA Simple:**
     - [ ] Patrullas A-B (Movimiento rítmico).
     - [ ] Cazadores (Cono de visión y Dash hacia jugador).

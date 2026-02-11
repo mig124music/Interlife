@@ -1,0 +1,19 @@
+{
+    "name": "Interlife.Editor",
+    "rootNamespace": "Interlife.Editor",
+    "references": [
+        "GUID:a72fc785957fd3647ba208f8eeb74b4b",
+        "GUID:609027914bf36cb4f818b204f4b6a1f4"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

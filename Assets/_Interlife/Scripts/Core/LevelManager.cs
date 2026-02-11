@@ -2,14 +2,18 @@ using UnityEngine;
 
 namespace Interlife.Core
 {
+    /// <summary>
+    /// Manager local de cada nivel para gestionar progreso y respawn.
+    /// </summary>
     public class LevelManager : MonoBehaviour
     {
         public static LevelManager Instance { get; private set; }
 
         [Header("Level Data")]
-        [SerializeField] private string levelName;
+        [SerializeField] private string levelName = "Umbral_01";
+        
         private int fragmentsCollected = 0;
-        private Vector3 lastCheckpointPosition;
+        private Vector3 currentCheckpointPos;
 
         private void Awake()
         {
@@ -21,22 +25,32 @@ namespace Interlife.Core
             Instance = this;
         }
 
-        public void SetCheckpoint(Vector3 position)
+        /// <summary>
+        /// Actualiza la posición de reaparición del jugador.
+        /// </summary>
+        public void UpdateCheckpoint(Vector3 newPos)
         {
-            lastCheckpointPosition = position;
-            Debug.Log("Checkpoint saved at: " + position);
+            currentCheckpointPos = newPos;
+            Debug.Log($"<color=green>Checkpoint Saved: {newPos}</color>");
         }
 
-        public void CollectFragment()
+        /// <summary>
+        /// Suma un fragmento al contador del nivel.
+        /// </summary>
+        public void AddFragment()
         {
             fragmentsCollected++;
-            Debug.Log($"Fragments collected: {fragmentsCollected}/3");
+            Debug.Log($"<color=yellow>Fragments: {fragmentsCollected}/3</color>");
         }
 
-        public void RespawnPlayer(Transform playerTransform)
+        /// <summary>
+        /// Devuelve al jugador al último checkpoint.
+        /// </summary>
+        public void HandlePlayerDeath(Transform player)
         {
-            playerTransform.position = lastCheckpointPosition;
-            Debug.Log("Player respawned at last checkpoint.");
+            player.position = currentCheckpointPos;
+            // Aquí activaríamos el efecto visual de disolución más adelante
+            Debug.Log("<color=red>Player Respawned</color>");
         }
     }
 }

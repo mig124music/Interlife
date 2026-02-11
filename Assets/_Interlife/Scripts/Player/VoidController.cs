@@ -1,5 +1,6 @@
 using UnityEngine;
 using Interlife.Core;
+using System.Collections;
 
 namespace Interlife.Player
 {
@@ -34,10 +35,20 @@ namespace Interlife.Player
         {
             rb = GetComponent<Rigidbody2D>();
             defaultGravityScale = rb.gravityScale;
+            
+            // Aseguramos que el Rigidbody esté configurado para interpolación (fluidez)
+            rb.interpolation = RigidbodyInterpolation2D.Interpolate;
+            rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
         }
 
         private void OnEnable()
         {
+            if (inputReader == null)
+            {
+                Debug.LogError("InputReader not assigned in VoidController!");
+                return;
+            }
+
             inputReader.MoveEvent += OnMove;
             inputReader.JumpEvent += OnJump;
             inputReader.JumpCancelledEvent += OnJumpCancelled;
@@ -46,16 +57,20 @@ namespace Interlife.Player
 
         private void OnDisable()
         {
-            inputReader.MoveEvent -= OnMove;
-            inputReader.JumpEvent -= OnJump;
-            inputReader.JumpCancelledEvent -= OnJumpCancelled;
-            inputReader.DashEvent -= OnDash;
+            if (inputReader != null)
+            {
+                inputReader.MoveEvent -= OnMove;
+                inputReader.JumpEvent -= OnJump;
+                inputReader.JumpCancelledEvent -= OnJumpCancelled;
+                inputReader.DashEvent -= OnDash;
+            }
         }
 
         private void Update()
         {
             CheckGround();
             ApplyAsymmetricGravity();
+            FlipSprite();
         }
 
         private void FixedUpdate()
@@ -66,18 +81,26 @@ namespace Interlife.Player
 
         private void CheckGround()
         {
+            if (groundCheckTransform == null) return;
+            
             isGrounded = Physics2D.OverlapCircle(groundCheckTransform.position, groundCheckRadius, groundLayer);
-            if (isGrounded) canDash = true;
+            if (isGrounded && !isDashing)
+            {
+                canDash = true;
+            }
         }
 
         private void OnMove(Vector2 input) => moveInput = input;
 
         private void ApplyMovement()
         {
-            rb.velocity = new Vector2(moveInput.x * moveSpeed, rb.velocity.y);
-            
-            // Flip sprite logic could go here
-            if (moveInput.x != 0)
+            // Usamos linearVelocity para Unity 6
+            rb.linearVelocity = new Vector2(moveInput.x * moveSpeed, rb.linearVelocity.y);
+        }
+
+        private void FlipSprite()
+        {
+            if (moveInput.x != 0 && !isDashing)
             {
                 transform.localScale = new Vector3(Mathf.Sign(moveInput.x), 1, 1);
             }
@@ -87,17 +110,19 @@ namespace Interlife.Player
         {
             if (isGrounded)
             {
+                // Fórmula física: v = sqrt(h * -2 * g)
                 float jumpForce = Mathf.Sqrt(jumpHeight * -2 * (Physics2D.gravity.y * rb.gravityScale));
                 rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
-                Debug.Log("Jump!");
+                Debug.Log("Jump Performed");
             }
         }
 
         private void OnJumpCancelled()
         {
-            if (rb.velocity.y > 0)
+            // Salto variable: si soltamos el botón antes del pico, reducimos la velocidad vertical
+            if (rb.linearVelocity.y > 0)
             {
-                rb.velocity = new Vector2(rb.velocity.x, rb.velocity.y * 0.5f);
+                rb.linearVelocity = new Vector2(rb.linearVelocity.x, rb.linearVelocity.y * 0.5f);
             }
         }
 
@@ -105,11 +130,11 @@ namespace Interlife.Player
         {
             if (isDashing) return;
 
-            if (rb.velocity.y > 0)
+            if (rb.linearVelocity.y > 0) // Ascendiendo
             {
                 rb.gravityScale = defaultGravityScale * upwardGravityMultiplier;
             }
-            else if (rb.velocity.y < 0)
+            else if (rb.linearVelocity.y < 0) // Cayendo
             {
                 rb.gravityScale = defaultGravityScale * downwardGravityMultiplier;
             }
@@ -127,7 +152,7 @@ namespace Interlife.Player
             }
         }
 
-        private System.Collections.IEnumerator ExecuteDash()
+        private IEnumerator ExecuteDash()
         {
             isDashing = true;
             canDash = false;
@@ -136,14 +161,27 @@ namespace Interlife.Player
             rb.gravityScale = 0;
             
             float dashDirection = transform.localScale.x;
-            rb.velocity = new Vector2(dashDirection * (dashDistance / dashDuration), 0);
+            // Velocidad constante para cubrir la distancia exacta en el tiempo exacto
+            rb.linearVelocity = new Vector2(dashDirection * (dashDistance / dashDuration), 0);
             
             yield return new WaitForSeconds(dashDuration);
             
             rb.gravityScale = originalGravity;
             isDashing = false;
             
-            Debug.Log("Dash executed");
+            // Pequeño reset de velocidad tras el dash para evitar tirones
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0);
+            
+            Debug.Log("Dash Executed");
+        }
+
+        private void OnDrawGizmosSelected()
+        {
+            if (groundCheckTransform != null)
+            {
+                Gizmos.color = Color.red;
+                Gizmos.DrawWireSphere(groundCheckTransform.position, groundCheckRadius);
+            }
         }
     }
 }
