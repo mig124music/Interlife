@@ -37,18 +37,38 @@ namespace Interlife.Editor
             
             // Buscar el InputReader en el proyecto automáticamente
             string[] guids = AssetDatabase.FindAssets("t:InputReader");
+            InputReader reader = null;
+
             if (guids.Length > 0)
             {
                 string path = AssetDatabase.GUIDToAssetPath(guids[0]);
-                InputReader reader = AssetDatabase.LoadAssetAtPath<InputReader>(path);
-                so.FindProperty("inputReader").objectReferenceValue = reader;
+                reader = AssetDatabase.LoadAssetAtPath<InputReader>(path);
             }
             else
             {
-                Debug.LogWarning("No se encontró ningún asset de tipo InputReader. Deberás asignarlo manualmente.");
+                // Auto-crear el asset si no existe
+                reader = ScriptableObject.CreateInstance<InputReader>();
+                if (!AssetDatabase.IsValidFolder("Assets/_Interlife/Settings"))
+                {
+                    if (!AssetDatabase.IsValidFolder("Assets/_Interlife")) AssetDatabase.CreateFolder("Assets", "_Interlife");
+                    AssetDatabase.CreateFolder("Assets/_Interlife", "Settings");
+                }
+                AssetDatabase.CreateAsset(reader, "Assets/_Interlife/Settings/InputReader.asset");
+                AssetDatabase.SaveAssets();
+                Debug.Log("<color=yellow>🤖 Robot: No se encontró InputReader, se ha creado uno nuevo en Assets/_Interlife/Settings/</color>");
+            }
+
+            if (reader != null)
+            {
+                so.FindProperty("inputReader").objectReferenceValue = reader;
             }
 
             so.FindProperty("groundCheckTransform").objectReferenceValue = groundCheck.transform;
+            
+            // Configurar capa de suelo por defecto a Everything o Default para asegurar que el test funciona
+            // En un proyecto real, el usuario asignaría la capa "Ground"
+            so.FindProperty("groundLayer").intValue = -1; // -1 es "Everything"
+
             so.ApplyModifiedProperties();
 
             // 6. Escena y Feedback

@@ -2,7 +2,7 @@
     "name": "Interlife.Player",
     "rootNamespace": "Interlife.Player",
     "references": [
-        "GUID:75469ad4a38634e559750d17036d6f7c",
+        "Unity.InputSystem",
         "GUID:a72fc785957fd3647ba208f8eeb74b4b"
     ],
     "includePlatforms": [],

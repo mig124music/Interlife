@@ -1,14 +1,10 @@
 {
-    "name": "Interlife.Editor",
-    "rootNamespace": "Interlife.Editor",
+    "name": "Interlife.Environment",
+    "rootNamespace": "Interlife.Environment",
     "references": [
-        "GUID:a72fc785957fd3647ba208f8eeb74b4b",
-        "GUID:609027914bf36cb4f818b204f4b6a1f4",
-        "Interlife.Environment"
+        "GUID:a72fc785957fd3647ba208f8eeb74b4b"
     ],
-    "includePlatforms": [
-        "Editor"
-    ],
+    "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
     "overrideReferences": false,

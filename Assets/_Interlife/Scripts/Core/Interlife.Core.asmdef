@@ -1,7 +1,9 @@
 {
     "name": "Interlife.Core",
     "rootNamespace": "Interlife.Core",
-    "references": [],
+    "references": [
+        "Unity.InputSystem"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

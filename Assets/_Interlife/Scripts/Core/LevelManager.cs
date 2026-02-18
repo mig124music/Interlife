@@ -28,7 +28,7 @@ namespace Interlife.Core
         /// <summary>
         /// Actualiza la posición de reaparición del jugador.
         /// </summary>
-        public void UpdateCheckpoint(Vector3 newPos)
+        public void SetCheckpoint(Vector3 newPos)
         {
             currentCheckpointPos = newPos;
             Debug.Log($"<color=green>Checkpoint Saved: {newPos}</color>");
@@ -37,7 +37,7 @@ namespace Interlife.Core
         /// <summary>
         /// Suma un fragmento al contador del nivel.
         /// </summary>
-        public void AddFragment()
+        public void CollectFragment()
         {
             fragmentsCollected++;
             Debug.Log($"<color=yellow>Fragments: {fragmentsCollected}/3</color>");
@@ -46,7 +46,7 @@ namespace Interlife.Core
         /// <summary>
         /// Devuelve al jugador al último checkpoint.
         /// </summary>
-        public void HandlePlayerDeath(Transform player)
+        public void RespawnPlayer(Transform player)
         {
             player.position = currentCheckpointPos;
             // Aquí activaríamos el efecto visual de disolución más adelante
