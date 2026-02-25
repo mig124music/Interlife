@@ -12,6 +12,10 @@ namespace Interlife.Player
         [SerializeField] private float jumpHeight = 3.5f;
         [SerializeField] private float dashDistance = 4f;
         [SerializeField] private float dashDuration = 0.2f;
+
+        [Header("Game Feel")]
+        [SerializeField] private float coyoteTime = 0.15f;
+        [SerializeField] private float jumpBufferTime = 0.15f;
         
         [Header("Physics Settings")]
         [SerializeField] private float upwardGravityMultiplier = 1f;
@@ -22,18 +26,24 @@ namespace Interlife.Player
 
         [Header("References")]
         [SerializeField] private InputReader inputReader;
+        [SerializeField] private SpriteRenderer spriteRenderer;
+        [SerializeField] private GhostTrail ghostTrail;
 
         private Rigidbody2D rb;
         private Vector2 moveInput;
         private bool isGrounded;
         private bool canDash = true;
         private bool isDashing = false;
-
         private float defaultGravityScale;
+        private float coyoteTimeCounter;
+        private float jumpBufferCounter;
 
         private void Awake()
         {
             rb = GetComponent<Rigidbody2D>();
+            if (spriteRenderer == null) spriteRenderer = GetComponent<SpriteRenderer>();
+            if (ghostTrail == null) ghostTrail = GetComponent<GhostTrail>();
+            
             defaultGravityScale = rb.gravityScale;
             
             // Aseguramos que el Rigidbody esté configurado para interpolación (fluidez)
@@ -69,8 +79,28 @@ namespace Interlife.Player
         private void Update()
         {
             CheckGround();
+            HandleInputBuffer();
+            CheckJumpLogic();
             ApplyAsymmetricGravity();
             FlipSprite();
+        }
+
+        private void HandleInputBuffer()
+        {
+            // Coyote Time
+            if (isGrounded) coyoteTimeCounter = coyoteTime;
+            else coyoteTimeCounter -= Time.deltaTime;
+
+            // Jump Buffer
+            jumpBufferCounter -= Time.deltaTime;
+        }
+
+        private void CheckJumpLogic()
+        {
+            if (jumpBufferCounter > 0 && coyoteTimeCounter > 0)
+            {
+                PerformJump();
+            }
         }
 
         private void FixedUpdate()
@@ -84,6 +114,15 @@ namespace Interlife.Player
             if (groundCheckTransform == null) return;
             
             isGrounded = Physics2D.OverlapCircle(groundCheckTransform.position, groundCheckRadius, groundLayer);
+            
+            // Debug para ver qué está detectando como suelo
+            if (Input.GetKeyDown(KeyCode.G)) // Tecla G para debug manual si es necesario
+            {
+                Collider2D hit = Physics2D.OverlapCircle(groundCheckTransform.position, groundCheckRadius, groundLayer);
+                if (hit != null) Debug.Log($"GroundCheck hit: {hit.name} on layer {LayerMask.LayerToName(hit.gameObject.layer)}");
+                else Debug.Log("GroundCheck hit nothing");
+            }
+
             if (isGrounded && !isDashing)
             {
                 canDash = true;
@@ -100,21 +139,31 @@ namespace Interlife.Player
 
         private void FlipSprite()
         {
-            if (moveInput.x != 0 && !isDashing)
+            if (moveInput.x != 0 && !isDashing && spriteRenderer != null)
             {
-                transform.localScale = new Vector3(Mathf.Sign(moveInput.x), 1, 1);
+                spriteRenderer.flipX = moveInput.x < 0;
             }
         }
 
         private void OnJump()
         {
-            if (isGrounded)
-            {
-                // Fórmula física: v = sqrt(h * -2 * g)
-                float jumpForce = Mathf.Sqrt(jumpHeight * -2 * (Physics2D.gravity.y * rb.gravityScale));
-                rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
-                Debug.Log("Jump Performed");
-            }
+            jumpBufferCounter = jumpBufferTime;
+        }
+
+        private void PerformJump()
+        {
+            // Detener el buffering
+            jumpBufferCounter = 0;
+            coyoteTimeCounter = 0;
+
+            // Fórmula física: v = sqrt(h * -2 * g)
+            float gravity = Physics2D.gravity.y * rb.gravityScale;
+            float jumpForce = Mathf.Sqrt(jumpHeight * -2 * gravity);
+            
+            rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0); // Reset vertical
+            rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
+            
+            Debug.Log("Jump Performed with Game Feel");
         }
 
         private void OnJumpCancelled()
@@ -160,19 +209,29 @@ namespace Interlife.Player
             float originalGravity = rb.gravityScale;
             rb.gravityScale = 0;
             
-            float dashDirection = transform.localScale.x;
+            // Dirección basada en hacia donde mira el sprite (flipX true = izquierda)
+            float dashDirection = spriteRenderer != null && spriteRenderer.flipX ? -1f : 1f;
+            
+            // Si el jugador está quieto, usamos localScale por si acaso, o simplemente movInput
+            if (moveInput.x != 0) dashDirection = Mathf.Sign(moveInput.x);
+
             // Velocidad constante para cubrir la distancia exacta en el tiempo exacto
             rb.linearVelocity = new Vector2(dashDirection * (dashDistance / dashDuration), 0);
             
+            // Visual Trail
+            if (ghostTrail != null) ghostTrail.StartTrail();
+
             yield return new WaitForSeconds(dashDuration);
             
+            if (ghostTrail != null) ghostTrail.StopTrail();
+
             rb.gravityScale = originalGravity;
             isDashing = false;
             
             // Pequeño reset de velocidad tras el dash para evitar tirones
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0);
             
-            Debug.Log("Dash Executed");
+            Debug.Log("Dash Executed with Shadow Trail");
         }
 
         private void OnDrawGizmosSelected()
