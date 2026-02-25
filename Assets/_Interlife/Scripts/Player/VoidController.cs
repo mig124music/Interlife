@@ -12,6 +12,11 @@ namespace Interlife.Player
         [SerializeField] private float jumpHeight = 3.5f;
         [SerializeField] private float dashDistance = 4f;
         [SerializeField] private float dashDuration = 0.2f;
+        
+        [Header("Wall Jump Settings")]
+        [SerializeField] private float wallSlideSpeed = 2f;
+        [SerializeField] private Vector2 wallJumpForce = new Vector2(10f, 15f);
+        [SerializeField] private float wallJumpDuration = 0.2f;
 
         [Header("Game Feel")]
         [SerializeField] private float coyoteTime = 0.15f;
@@ -23,6 +28,9 @@ namespace Interlife.Player
         [SerializeField] private float groundCheckRadius = 0.2f;
         [SerializeField] private LayerMask groundLayer;
         [SerializeField] private Transform groundCheckTransform;
+        [SerializeField] private Transform wallCheckLeft;
+        [SerializeField] private Transform wallCheckRight;
+        [SerializeField] private float wallCheckDistance = 0.2f;
 
         [Header("References")]
         [SerializeField] private InputReader inputReader;
@@ -32,6 +40,12 @@ namespace Interlife.Player
         private Rigidbody2D rb;
         private Vector2 moveInput;
         private bool isGrounded;
+        private bool isTouchingWall;
+        private bool isWallSliding;
+        private bool isWallJumping;
+        private float wallJumpDirection;
+        private float wallJumpTimer;
+
         private bool canDash = true;
         private bool isDashing = false;
         private float defaultGravityScale;
@@ -79,8 +93,10 @@ namespace Interlife.Player
         private void Update()
         {
             CheckGround();
+            CheckWall();
             HandleInputBuffer();
             CheckJumpLogic();
+            HandleWallSlide();
             ApplyAsymmetricGravity();
             FlipSprite();
         }
@@ -97,15 +113,22 @@ namespace Interlife.Player
 
         private void CheckJumpLogic()
         {
-            if (jumpBufferCounter > 0 && coyoteTimeCounter > 0)
+            if (jumpBufferCounter > 0)
             {
-                PerformJump();
+                if (coyoteTimeCounter > 0)
+                {
+                    PerformJump();
+                }
+                else if (isTouchingWall && !isGrounded)
+                {
+                    PerformWallJump();
+                }
             }
         }
 
         private void FixedUpdate()
         {
-            if (isDashing) return;
+            if (isDashing || isWallJumping) return;
             ApplyMovement();
         }
 
@@ -129,6 +152,43 @@ namespace Interlife.Player
             }
         }
 
+        private void CheckWall()
+        {
+            bool hitLeft = false;
+            bool hitRight = false;
+
+            if (wallCheckLeft != null)
+                hitLeft = Physics2D.Raycast(wallCheckLeft.position, Vector2.left, wallCheckDistance, groundLayer);
+            
+            if (wallCheckRight != null)
+                hitRight = Physics2D.Raycast(wallCheckRight.position, Vector2.right, wallCheckDistance, groundLayer);
+            
+            isTouchingWall = hitRight || hitLeft;
+            if (isTouchingWall)
+            {
+                wallJumpDirection = hitRight ? -1f : 1f;
+            }
+        }
+
+        private void HandleWallSlide()
+        {
+            if (isTouchingWall && !isGrounded && rb.linearVelocity.y < 0 && moveInput.x != 0)
+            {
+                isWallSliding = true;
+                rb.linearVelocity = new Vector2(rb.linearVelocity.x, Mathf.Clamp(rb.linearVelocity.y, -wallSlideSpeed, float.MaxValue));
+            }
+            else
+            {
+                isWallSliding = false;
+            }
+
+            if (isWallJumping)
+            {
+                wallJumpTimer -= Time.deltaTime;
+                if (wallJumpTimer <= 0) isWallJumping = false;
+            }
+        }
+
         private void OnMove(Vector2 input) => moveInput = input;
 
         private void ApplyMovement()
@@ -139,6 +199,7 @@ namespace Interlife.Player
 
         private void FlipSprite()
         {
+            if (isWallSliding) return; // No girar mientras desliza
             if (moveInput.x != 0 && !isDashing && spriteRenderer != null)
             {
                 spriteRenderer.flipX = moveInput.x < 0;
@@ -164,6 +225,20 @@ namespace Interlife.Player
             rb.AddForce(Vector2.up * jumpForce, ForceMode2D.Impulse);
             
             Debug.Log("Jump Performed with Game Feel");
+        }
+
+        private void PerformWallJump()
+        {
+            jumpBufferCounter = 0;
+            isWallJumping = true;
+            wallJumpTimer = wallJumpDuration;
+
+            rb.linearVelocity = new Vector2(wallJumpDirection * wallJumpForce.x, wallJumpForce.y);
+            
+            // Forzar giro del sprite al saltar del muro
+            if (spriteRenderer != null) spriteRenderer.flipX = wallJumpDirection < 0;
+
+            Debug.Log("Wall Jump Performed!");
         }
 
         private void OnJumpCancelled()
@@ -209,14 +284,22 @@ namespace Interlife.Player
             float originalGravity = rb.gravityScale;
             rb.gravityScale = 0;
             
-            // Dirección basada en hacia donde mira el sprite (flipX true = izquierda)
-            float dashDirection = spriteRenderer != null && spriteRenderer.flipX ? -1f : 1f;
-            
-            // Si el jugador está quieto, usamos localScale por si acaso, o simplemente movInput
-            if (moveInput.x != 0) dashDirection = Mathf.Sign(moveInput.x);
+            Vector2 dashDirection;
+
+            // Prioridad al dash hacia arriba si se pulsa arriba
+            if (moveInput.y > 0.5f)
+            {
+                dashDirection = Vector2.up;
+            }
+            else
+            {
+                // Dirección horizontal basada en el input o en el giro del sprite
+                float xDir = moveInput.x != 0 ? Mathf.Sign(moveInput.x) : (spriteRenderer != null && spriteRenderer.flipX ? -1f : 1f);
+                dashDirection = new Vector2(xDir, 0);
+            }
 
             // Velocidad constante para cubrir la distancia exacta en el tiempo exacto
-            rb.linearVelocity = new Vector2(dashDirection * (dashDistance / dashDuration), 0);
+            rb.linearVelocity = dashDirection * (dashDistance / dashDuration);
             
             // Visual Trail
             if (ghostTrail != null) ghostTrail.StartTrail();
@@ -231,7 +314,7 @@ namespace Interlife.Player
             // Pequeño reset de velocidad tras el dash para evitar tirones
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, 0);
             
-            Debug.Log("Dash Executed with Shadow Trail");
+            Debug.Log($"Dash Executed: {dashDirection} with Shadow Trail");
         }
 
         private void OnDrawGizmosSelected()
@@ -240,6 +323,18 @@ namespace Interlife.Player
             {
                 Gizmos.color = Color.red;
                 Gizmos.DrawWireSphere(groundCheckTransform.position, groundCheckRadius);
+            }
+
+            if (wallCheckLeft != null)
+            {
+                Gizmos.color = Color.blue;
+                Gizmos.DrawRay(wallCheckLeft.position, Vector2.left * wallCheckDistance);
+            }
+
+            if (wallCheckRight != null)
+            {
+                Gizmos.color = Color.blue;
+                Gizmos.DrawRay(wallCheckRight.position, Vector2.right * wallCheckDistance);
             }
         }
     }

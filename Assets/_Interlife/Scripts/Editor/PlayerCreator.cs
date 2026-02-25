@@ -40,6 +40,15 @@ namespace Interlife.Editor
             // 4b. Añadir GhostTrail
             GhostTrail gt = voidPlayer.AddComponent<GhostTrail>();
 
+            // 4c. Crear WallChecks
+            GameObject wallCheckL = new GameObject("WallCheck_L");
+            wallCheckL.transform.SetParent(voidPlayer.transform);
+            wallCheckL.transform.localPosition = new Vector3(-0.5f, 0, 0);
+
+            GameObject wallCheckR = new GameObject("WallCheck_R");
+            wallCheckR.transform.SetParent(voidPlayer.transform);
+            wallCheckR.transform.localPosition = new Vector3(0.5f, 0, 0);
+
             // 5. Añadir y configurar VoidController
             VoidController controller = voidPlayer.AddComponent<VoidController>();
             
@@ -77,6 +86,8 @@ namespace Interlife.Editor
             so.FindProperty("spriteRenderer").objectReferenceValue = sr;
             so.FindProperty("ghostTrail").objectReferenceValue = gt;
             so.FindProperty("groundCheckTransform").objectReferenceValue = groundCheck.transform;
+            so.FindProperty("wallCheckLeft").objectReferenceValue = wallCheckL.transform;
+            so.FindProperty("wallCheckRight").objectReferenceValue = wallCheckR.transform;
             
             // Configurar capa de suelo por defecto a Everything o Default para asegurar que el test funciona
             // En un proyecto real, el usuario asignaría la capa "Ground"
@@ -154,6 +165,26 @@ namespace Interlife.Editor
             if (ghostProp.objectReferenceValue == null)
             {
                 ghostProp.objectReferenceValue = gt;
+            }
+
+            // 1c. Asegurar WallChecks
+            SerializedProperty wallPropL = so.FindProperty("wallCheckLeft");
+            SerializedProperty wallPropR = so.FindProperty("wallCheckRight");
+
+            if (wallPropL.objectReferenceValue == null)
+            {
+                GameObject wl = new GameObject("WallCheck_L");
+                wl.transform.SetParent(selected.transform);
+                wl.transform.localPosition = new Vector3(-0.5f, 0, 0);
+                wallPropL.objectReferenceValue = wl.transform;
+            }
+
+            if (wallPropR.objectReferenceValue == null)
+            {
+                GameObject wr = new GameObject("WallCheck_R");
+                wr.transform.SetParent(selected.transform);
+                wr.transform.localPosition = new Vector3(0.5f, 0, 0);
+                wallPropR.objectReferenceValue = wr.transform;
             }
 
             so.ApplyModifiedProperties();
